@@ -46,6 +46,14 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # #!/bin/shで始まるスクリプトがbash互換の挙動を前提にしているため維持する
 RUN ln -sf /bin/bash /bin/sh
 
+# corepack（pnpm/yarn等のパッケージマネージャー起動シム）を有効化する。
+# Node 24ではcorepackは同梱されているが既定で無効なうえ、シム作成先の
+# /usr/local/bin はroot所有のため、USER切り替え後に$USERNAMEが実行すると
+# EACCESで失敗する。root権限があるこの時点で有効化しておくことで、
+# 各プロジェクトのpackage.json記載のpackageManager（例: pnpm@11.7.0）に
+# 従ったバージョンが$USERNAMEからも利用可能になる
+RUN corepack enable
+
 # ホストのDocker socketのGIDに合わせるためのdockerグループを作成し、$USERNAMEを所属させる
 RUN groupadd --system docker \
     && usermod -aG docker "$USERNAME"
