@@ -15,6 +15,8 @@ ENV DEVCONTAINER_USERNAME=$USERNAME
 # Install sudo, minimal required development tools, GitHub CLI (gh), and
 # Docker CLI (docker-outside-of-docker; ホストのDocker daemonをそのまま使うため、
 # daemon本体は入れずCLI/buildx/composeプラグインのみを導入する)。
+# openssh-clientはベースイメージに含まれておらず、git@github.com:...のようなSSH
+# リモートに対するgit pull/pushができなかったため追加する。
 # python3/python3-venv/python3-pipはベースイメージ(node:24-trixie-slim)に含まれて
 # いないため、devcontainer内でpython3を利用可能にする目的で追加する。
 # Debian trixieのpipはデフォルトでPEP 668(externally-managed-environment)が有効で
@@ -34,6 +36,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     socat \
     procps \
     git \
+    openssh-client \
     python3 \
     python3-venv \
     python3-pip \
