@@ -15,6 +15,11 @@ ENV DEVCONTAINER_USERNAME=$USERNAME
 # Install sudo, minimal required development tools, GitHub CLI (gh), and
 # Docker CLI (docker-outside-of-docker; ホストのDocker daemonをそのまま使うため、
 # daemon本体は入れずCLI/buildx/composeプラグインのみを導入する)。
+# python3/python3-venv/python3-pipはベースイメージ(node:24-trixie-slim)に含まれて
+# いないため、devcontainer内でpython3を利用可能にする目的で追加する。
+# Debian trixieのpipはデフォルトでPEP 668(externally-managed-environment)が有効で
+# システム領域への直接installを拒否するため、python3-venvで作成した仮想環境経由での
+# 利用を前提とする。
 # 鍵取得・リポジトリ登録・インストールを1つのRUNにまとめ、apt listsの
 # ダウンロード分がレイヤーごとに積み上がらないようにする。
 # gnupgは鍵取得後にのみ必要なため、最後にpurgeして最終イメージから除去する。
@@ -29,6 +34,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     socat \
     procps \
     git \
+    python3 \
+    python3-venv \
+    python3-pip \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
     && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
