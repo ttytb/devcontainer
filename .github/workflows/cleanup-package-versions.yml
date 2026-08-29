@@ -1,0 +1,27 @@
+name: Cleanup Old Package Versions
+
+# docker-publish.yml がタグpushをトリガーに新バージョンをGHCRへ公開した直後に実行し、
+# 常に最新3バージョンのみを保持する。pull_requestトリガーのビルド検証（pushしない）
+# 完了時には発火させないよう、workflow_run.event が push の場合のみ対象とする
+on:
+  workflow_run:
+    workflows: ["Docker Publish"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      # コンテナパッケージの削除はgithub.tokenだけでは権限不足になることがあり、
+      # リポジトリのPackage Settings > Manage Actions Access で本リポジトリに
+      # Admin roleを付与しておく必要がある（ワークフロー側からは自動化できない）
+      - name: Delete old package versions
+        uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
+        with:
+          package-name: devcontainer
+          package-type: container
+          min-versions-to-keep: 3
