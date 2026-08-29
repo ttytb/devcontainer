@@ -58,3 +58,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # provenance attestationが別のuntaggedバージョンとしてGHCRに作成され、
+          # cleanup-package-versions.ymlのmin-versions-to-keepの枠を消費してしまうため無効化する
+          provenance: false
