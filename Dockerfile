@@ -110,11 +110,11 @@ RUN GIDFIX_BIN="/usr/local/bin/docker-gid-fix.sh" \
     && chmod 0440 "$SUDOERS_FILE" \
     && visudo -cf "$SUDOERS_FILE"
 
-# Playwright MCP（.mcp.json）が使うheadless Chromiumが依存するOSパッケージのインストール。
+# Playwright MCP（.mcp.json）が使うheadless Chromium/Firefoxが依存するOSパッケージのインストール。
 # apt権限が必要なためUSER切り替え前(root)で実行する。
 # playwright本体のバージョンは.mcp.jsonの@playwright/mcpが依存するバージョンと一致させる。
 # alpha版タグを固定利用しているため、@playwright/mcp側のバージョン更新時は追随漏れに注意する
-RUN npx -y playwright@1.62.0-alpha-1783623505000 install-deps chromium
+RUN npx -y playwright@1.62.0-alpha-1783623505000 install-deps chromium firefox
 
 # Set the active user for subsequent steps and container execution
 USER $USERNAME
@@ -129,9 +129,11 @@ RUN echo 'export PS1="\[\e[0;32m\]\u@\h\[\e[0;30m\]:\[\e[0;34m\]\W\[\e[0;30m\]\$
 # curlが失敗した場合はbashに空入力が渡って正常終了することなく、RUN自体が失敗する
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
-# Playwright MCP（.mcp.json）が使うheadless Chromium本体のインストール（OSパッケージは導入済み）。
-# playwright本体のバージョンは.mcp.jsonの@playwright/mcpが依存するバージョンと一致させる
-RUN npx -y playwright@1.62.0-alpha-1783623505000 install chromium
+# Playwright MCP（.mcp.json）が使うheadless Chromium/Firefox本体のインストール（OSパッケージは導入済み）。
+# playwright本体のバージョンは.mcp.jsonの@playwright/mcpが依存するバージョンと一致させる。
+# ここでキャッシュするfirefoxのリビジョンが@playwright/mcp側の要求リビジョンとずれると
+# コンテナ起動後に再ダウンロードが発生するため、バージョンのずれには注意する
+RUN npx -y playwright@1.62.0-alpha-1783623505000 install chromium firefox
 
 # docker-init.shをENTRYPOINTとして実行し、コンテナ起動のたびにdocker socketの
 # セットアップを行う。CMDはdevcontainerを起動状態に維持するための待機コマンド
