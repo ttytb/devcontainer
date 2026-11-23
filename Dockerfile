@@ -22,6 +22,8 @@ ENV DEVCONTAINER_USERNAME=$USERNAME
 # Debian trixieのpipはデフォルトでPEP 668(externally-managed-environment)が有効で
 # システム領域への直接installを拒否するため、python3-venvで作成した仮想環境経由での
 # 利用を前提とする。
+# ruby-fullも同様にベースイメージに含まれておらず、devcontainer内でRubyを
+# 利用可能にする目的で追加する(バージョンはtrixie同梱のもので固定)。
 # 鍵取得・リポジトリ登録・インストールを1つのRUNにまとめ、apt listsの
 # ダウンロード分がレイヤーごとに積み上がらないようにする。
 # gnupgは鍵取得後にのみ必要なため、最後にpurgeして最終イメージから除去する。
@@ -40,6 +42,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     python3 \
     python3-venv \
     python3-pip \
+    ruby-full \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
     && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
@@ -51,6 +54,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     docker-compose-plugin \
     && apt-get purge -y gnupg \
     && rm -rf /var/lib/apt/lists/*
+
+# dotenv gemのインストール。.envファイルをRubyスクリプトから読み込めるようにする目的で追加する。
+# ビルドの再現性のためバージョンを固定する
+RUN gem install dotenv -v 3.2.0
 
 # /bin/shをbashへのシンボリックリンクに変更する。DockerのSHELL命令は各RUNの
 # 起動コマンドを直接指定するため本来は不要だが、コンテナ実行時（ビルド後）に
