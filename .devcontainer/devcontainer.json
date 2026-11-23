@@ -1,0 +1,73 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
+{
+	"name": "Node.js & TypeScript",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "ghcr.io/ttytb/devcontainer:1.2.1",
+
+	// claude-code / github-cli / docker CLIはDockerfileに事前インストール済みのため、
+	// featuresは使用しない。
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "yarn install",
+
+	// Configure tool-specific properties.
+	// "customizations": {},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"vitest.explorer"
+			]
+		}
+	},
+
+	// ホスト側の事前準備（未作成ファイルのディレクトリ化対策、ssh-agentソケットのフォールバック）。
+	// 詳細は .devcontainer/initialize.sh を参照。
+	"initializeCommand": "bash \"${localWorkspaceFolder}/.devcontainer/initialize.sh\"",
+
+	"containerEnv": {
+		"TZ": "Asia/Tokyo",
+		"SSH_AUTH_SOCK": "/ssh-agent.sock"
+	},
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	//"remoteUser": "root",
+	"remoteUser": "node",
+
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+
+	// 以下はホスト側に該当ファイル/ディレクトリが事前に存在すること前提のバインドマウント。
+	// .claude / .claude.json はClaude Codeがコンテナ内でセッション状態を書き込むためRWのまま維持し、
+	// 書き込み不要なgit/gh系の設定・認証情報のみreadonly化している。
+	// .config/gh もreadonly化しているため、`gh auth login`/`gh auth refresh`等の認証情報書き込みは
+	// コンテナ内では失敗する。認証はホスト側で行うこと。
+	// SSH秘密鍵はコンテナに直接渡さず、ホストのssh-agentソケットのみを共有する（エージェントフォワーディング方式）。
+	// known_hostsに未登録のリモートへは接続できないため、主要なリモート（github.com等）は
+	// ホスト側で事前にssh接続し登録しておくこと。
+	// ssh-agentソケットはinitialize.shが用意する固定パス(~/.ssh/devcontainer-agent.sock)経由でマウントする。
+	// SSH_AUTH_SOCKが無効な場合はそこが空ファイルになり、マウント自体は成功するがSSH転送は機能しない。
+	// ホストとコンテナ内(node)ユーザーのUIDが一致しない環境では、ssh-agentソケットの権限により
+	// コンテナ側から接続できない場合がある。SSH転送を使う場合は動作確認すること。
+	//
+	// 【受容済みのセキュリティリスク】このdevcontainerはホストとの隔離境界として扱わない（設計判断）。
+	// - docker.sock: コンテナ内からホストDockerを操作できる＝実質ホストroot相当。
+	//   コンテナ内でのdocker操作が必要なため受容する。
+	// - .claude / .claude.json (RW): コンテナ内からhooks・MCP設定・CLAUDE.mdを改変すると、
+	//   次回ホストでClaude Code起動時にホスト上で実行され得る。OAuth認証情報も読み書き可能。
+	//   ホストとセッション状態・設定を共有するため受容する。
+	// 信頼できないコード・ブランチをこのコンテナで扱わないこと。
+	"mounts": [
+		"source=${localEnv:HOME}/.claude,target=/home/node/.claude,type=bind",
+		"source=${localEnv:HOME}/.claude.json,target=/home/node/.claude.json,type=bind",
+		"source=${localEnv:HOME}/.gitconfig,target=/home/node/.gitconfig,type=bind,readonly",
+		"source=${localEnv:HOME}/.config/git,target=/home/node/.config/git,type=bind,readonly",
+		"source=${localEnv:HOME}/.config/gh,target=/home/node/.config/gh,type=bind,readonly",
+		"source=${localEnv:HOME}/.ssh/known_hosts,target=/home/node/.ssh/known_hosts,type=bind,readonly",
+		"source=${localEnv:HOME}/.ssh/devcontainer-agent.sock,target=/ssh-agent.sock,type=bind",
+		"source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind"
+	]
+}
