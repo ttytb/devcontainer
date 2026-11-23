@@ -40,7 +40,8 @@
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
 
-	// 以下はホスト側に該当ファイル/ディレクトリが事前に存在すること前提のバインドマウント。
+	// 以下はホスト側のファイル/ディレクトリのバインドマウント。マウント元が未作成だと起動に失敗するため、
+	// initializeCommand（initialize.sh）が起動前に作成・復旧する。
 	// .claude / .claude.json はClaude Codeがコンテナ内でセッション状態を書き込むためRWのまま維持し、
 	// 書き込み不要なgit/gh系の設定・認証情報のみreadonly化している。
 	// .config/gh もreadonly化しているため、`gh auth login`/`gh auth refresh`等の認証情報書き込みは
@@ -59,6 +60,11 @@
 	// - .claude / .claude.json (RW): コンテナ内からhooks・MCP設定・CLAUDE.mdを改変すると、
 	//   次回ホストでClaude Code起動時にホスト上で実行され得る。OAuth認証情報も読み書き可能。
 	//   ホストとセッション状態・設定を共有するため受容する。
+	// - ssh-agent転送: 秘密鍵自体は渡さないが、コンテナ稼働中はエージェントに登録された全鍵で
+	//   署名できる（GitHub以外のホストへの接続も可能）。必要に応じ `ssh-add -c`（使用時確認）や
+	//   devcontainer用に権限を絞った鍵の利用を検討すること。
+	// - .config/gh (readonly): 書き換えは防げるが、hosts.yml のghトークンはコンテナ内から読める。
+	//   必要に応じ権限を絞ったfine-grained PATの利用を検討すること。
 	// 信頼できないコード・ブランチをこのコンテナで扱わないこと。
 	"mounts": [
 		"source=${localEnv:HOME}/.claude,target=/home/node/.claude,type=bind",

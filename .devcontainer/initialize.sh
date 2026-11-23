@@ -7,15 +7,18 @@ set -euo pipefail
 
 h="$HOME"
 
+# 第2引数は新規作成時の初期内容（省略時は空ファイル）。既存ファイルには触れない。
 ensure_file() {
 	local path="$1"
+	local initial="${2:-}"
 	if [ -d "$path" ]; then
 		rmdir "$path"
 	fi
-	[ -e "$path" ] || touch "$path"
+	[ -e "$path" ] || printf '%s' "$initial" > "$path"
 }
 
-ensure_file "$h/.claude.json"
+# 空ファイルは不正なJSONとして扱われるため、有効な空オブジェクトで作成する。
+ensure_file "$h/.claude.json" '{}'
 ensure_file "$h/.gitconfig"
 
 # ディレクトリ型のマウント元も、未作成だと --mount 形式では起動失敗するため事前に作成する。
